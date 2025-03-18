@@ -48,7 +48,9 @@ builder.Services.AddDbContext<ExpenseSplitterDbContext>(options =>
 
 
 builder.Services.AddScoped<IGroupService, GroupService>();
-builder.Services.AddScoped<IDebtService, DebtService>(); 
+builder.Services.AddScoped<IDebtService, DebtService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

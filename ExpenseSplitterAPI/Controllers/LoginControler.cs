@@ -19,7 +19,7 @@ namespace ExpenseSplitterAPI.Controllers
         public LoginController(IConfiguration configuration)
         {
             _configuration = configuration;
-            _context = new ExpenseSplitterDbContext(); // Consider using Dependency Injection
+            _context = new ExpenseSplitterDbContext(); 
         }
 
         [HttpPost]

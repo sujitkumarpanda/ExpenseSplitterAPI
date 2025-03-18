@@ -7,9 +7,12 @@ namespace ExpenseSplitterAPI.Services
 {
     public interface IGroupService
     {
+        Task<bool> RemoveUserFromGroup(int groupId, int userId);
         Task<Group> CreateGroup(GroupRequestModel request);
         Task<List<GroupModel>> GetAllGroups();
-        Task<Group> GetGroupById(int groupId);
+
+        Task<GroupModel> UpdateGroup(int groupId, GroupRequestModel request);
+        Task<GroupModel> GetGroupById(int groupId);
         Task<bool> DeleteGroup(int groupId);
         Task<bool> AddUserToGroup(int groupId, int userId);
         Task<List<GroupModel>> GetUserGroups(int userId);

@@ -64,6 +64,30 @@ namespace ExpenseSplitterAPI.Controllers
             return NoContent();
         }
 
+        [HttpDelete("{groupId}/removeUser/{userId}")]
+        public async Task<IActionResult> RemoveUserFromGroup(int groupId, int userId)
+        {
+            var removed = await _groupService.RemoveUserFromGroup(groupId, userId);
+            if (!removed)
+                return BadRequest("Failed to remove user from group.");
+
+            return Ok("User removed from group successfully.");
+        }
+        [HttpPut("{groupId}")]
+        public async Task<IActionResult> UpdateGroup(int groupId, [FromBody] GroupRequestModel request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest("Group name is required.");
+
+            var updatedGroup = await _groupService.UpdateGroup(groupId, request);
+
+            if (updatedGroup == null)
+                return NotFound("Group not found.");
+
+            return Ok(updatedGroup);
+        }
+
+
         [HttpPost("{groupId}/addUser/{userId}")]
         public async Task<IActionResult> AddUserToGroup(int groupId, int userId)
         {

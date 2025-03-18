@@ -1,12 +1,11 @@
-﻿using ExpenseSplitterAPI.Model;
+﻿using ExpenseSplitterAPI.APIModels;
+using ExpenseSplitterAPI.Model;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ExpenseSplitterAPI.Services
 {
-    public class PaymentService
+    public class PaymentService : IPaymentService
     {
         private readonly ExpenseSplitterDbContext _context;
 
@@ -15,43 +14,44 @@ namespace ExpenseSplitterAPI.Services
             _context = context;
         }
 
-        // Get all payments for a group
-        public async Task<List<Payment>> GetPaymentsByGroupIdAsync(int groupId)
+     
+        public async Task<bool> SettlePayment(PaymentRequestModel request)
         {
-            return await _context.Payments
-                .Where(p => p.GroupId == groupId)
-                .Include(p => p.FromUser)
-                .Include(p => p.ToUser)
-                .ToListAsync();
-        }
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Check if users exist in the group
+                var group = await _context.Groups
+                    .Include(g => g.GroupMembers)
+                    .FirstOrDefaultAsync(g => g.Id == request.GroupId);
 
-        // Create a new payment
-        public async Task<Payment> CreatePaymentAsync(Payment payment)
-        {
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-            return payment;
-        }
+                if (group == null ||
+                    !group.GroupMembers.Any(m => m.UserId == request.FromUserId) ||
+                    !group.GroupMembers.Any(m => m.UserId == request.ToUserId))
+                {
+                    return false; // One of the users is not in the group
+                }
 
-        // Get a single payment by ID
-        public async Task<Payment?> GetPaymentByIdAsync(int id)
-        {
-            return await _context.Payments
-                .Include(p => p.FromUser)
-                .Include(p => p.ToUser)
-                .FirstOrDefaultAsync(p => p.Id == id);
-        }
+                // Create a new payment record
+                var payment = new Payment
+                {
+                    GroupId = request.GroupId,
+                    FromUserId = request.FromUserId,
+                    ToUserId = request.ToUserId,
+                    Amount = request.Amount
+                };
 
-        // Delete a payment
-        public async Task<bool> DeletePaymentAsync(int id)
-        {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment == null)
+                _context.Payments.Add(payment);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
                 return false;
-
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
-            return true;
+            }
         }
     }
 }
