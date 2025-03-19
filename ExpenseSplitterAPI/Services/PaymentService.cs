@@ -44,6 +44,32 @@ namespace ExpenseSplitterAPI.Services
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
 
+                // ✅ Deduct the settled amount from the payer's expenses
+                var remainingAmount = request.Amount;
+
+                var expenses = await _context.Expenses
+                    .Where(e => e.GroupId == request.GroupId && e.PayerId == request.FromUserId)
+                    .OrderBy(e => e.Id) // Ensuring we deduct from oldest expense first
+                    .ToListAsync();
+
+                foreach (var expense in expenses)
+                {
+                    if (remainingAmount <= 0) break; // Stop if fully settled
+
+                    if (expense.Amount >= remainingAmount)
+                    {
+                        expense.Amount -= remainingAmount;
+                        remainingAmount = 0;
+                    }
+                    else
+                    {
+                        remainingAmount -= expense.Amount;
+                        expense.Amount = 0;
+                    }
+                }
+
+                await _context.SaveChangesAsync(); // ✅ Save updated expense amounts
+
                 await transaction.CommitAsync();
                 return true;
             }
